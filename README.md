@@ -1,2 +1,2 @@
 # 42-main.c
-42-main.c
+nduvoid's main for 42 cursus projects
