@@ -10,6 +10,7 @@
 # include <string.h>
 # include <stdlib.h>
 # include <fcntl.h>
+# include <stdarg.h>
 
 // Local
 //...
@@ -30,19 +31,15 @@
 # define REVERSE "\033[7m"
 
 // formating
-# define TITLE(title)		printf("\n" BOLD UNDERLINE title RESET "\n");
-# define PART(part)			printf("\n" YELLOW BOLD part RESET "\n");
-# define SUBPART(subpart)	printf("\n" YELLOW subpart RESET "\n");
+# define TITLE(title)			printf("\n" BOLD UNDERLINE title RESET "\n");
+# define PART(part)				printf("\n" YELLOW BOLD part RESET "\n");
+# define SUBPART(subpart)		printf("\n" YELLOW subpart RESET "\n");
 
-#define READ_FD(fd, output) ({ \
+# define REDIRECT(fd)			dup2(fd, STDOUT_FILENO);
+# define RESTORE(fd)			dup2(fd, STDOUT_FILENO);
+# define PRINTF(format, ...)	(int r = printf(format, __VA_ARGS__); \
 	fflush(stdout); \
-	lseek(fd, 0, SEEK_SET); \
-	output = gnl(fd); \
-})
-// tester
-# define TESTER_STDIN(user, expected)	((user) == (expected) ? 1 : 0)
-# define TESTER_OUTPUT(user, expected)	((user) == (expected) ? 1 : 0)
-# define TESTER(in, out)				((in) && (out) ? printf(GREEN "OK " RESET) : printf(RED "KO " RESET))
+	r;)
 
 /* -----| Enum |----- */
 
@@ -60,6 +57,25 @@ typedef enum e_error
 
 /* -----| Struct |----- */
 
+typedef struct s_test
+{
+	int		result : 2;
+	int		nb;
+	int		printf_ret;
+	int		ft_printf_ret;
+	char	*format;
+	char	*printf_out;
+	char	*ft_printf_out;
+	struct s_test	*next;
+	struct s_test	*prev;
+}	t_test;
+
+
+typedef struct s_tester
+{
+	int		nb_test;
+	t_test	*test;
+}	t_tester;
 
 /* -----| Function |----- */
 
