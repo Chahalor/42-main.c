@@ -6,7 +6,7 @@
 /*   By: nduvoid <nduvoid@42mulhouse.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/31 09:33:28 by nduvoid           #+#    #+#             */
-/*   Updated: 2025/01/31 10:48:46 by nduvoid          ###   ########.fr       */
+/*   Updated: 2025/01/31 11:25:08 by nduvoid          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,20 +59,6 @@ void	args_handler(int argc, char *argv[])
 		exit(1);
 	}
 }
-# define TEST(test, _format, ...) ({ \
-	t_test	*_new = (t_test *)malloc(sizeof(t_test) + sizeof(char) * (strlen(_format) + 1)); \
-	if (!_new) \
-		exiting(malloc_failed, "TEST: cannot malloc _new", NULL); \
-	_new->result = -1; \
-	_new->nb = g_nb_tests++; \
-	_new->format = (char *)(_new + sizeof(test)); \
-	_new->format = strcpy(_new->format, _format); \
-	_new->printf_ret = PRINTF(_format, ##__VA_ARGS__); \
-	_new->printf_out = gnl(g_fd); \
-	_new->ft_printf_ret = FT_PRINTF(_format, ##__VA_ARGS__); \
-	_new->ft_printf_out = gnl(g_fd); \
-	test->next = _new; \
-	})
 
 int	tester(void)
 {
@@ -94,11 +80,15 @@ int main(int argc, char *argv[])
 	test->next = NULL;
 	REDIRECT(g_fd);
 	TEST(test, "Hello, World!\n");
-	// RESTORE(g_fd);
 	dup2(g_saved_stdout, STDOUT_FILENO);
 	close(g_saved_stdout);
+	test->printf_out = gnl(g_fd);
+	test->ft_printf_out = gnl(g_fd);
+	// TEST(test, "Hello, %s!\n", "world");
+	// RESTORE(g_fd, g_saved_stdout);
+	
+	printf("Test %d: %s\n", test->nb, test->ft_printf_out);
 
-	printf("Test %d: %s\n", test->nb, test->printf_out);
 	free(test->printf_out);
 	close(g_fd);
 	free(test);

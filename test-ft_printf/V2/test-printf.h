@@ -36,7 +36,7 @@
 # define SUBPART(subpart)		printf("\n" YELLOW subpart RESET "\n");
 
 # define REDIRECT(fd)			dup2(fd, STDOUT_FILENO);
-# define RESTORE(fd)			dup2(g_saved_stdout, fd);
+# define RESTORE(_fd, _saved)	({dup2(_saved, _fd); close(_saved);})
 
 # define PRINTF(format, ...) ({ \
 	int _chars_written = printf(format, ##__VA_ARGS__); \
@@ -48,6 +48,22 @@
 	int _chars_written = ft_printf(format, ##__VA_ARGS__); \
 	fflush(stdout); \
 	_chars_written; \
+})
+
+# define TEST(test, _format, ...) ({ \
+	t_test	*_new = (t_test *)malloc(sizeof(t_test) + sizeof(char) * (strlen(_format) + 1)); \
+	if (!_new) \
+		exiting(malloc_failed, "TEST: cannot malloc _new", NULL); \
+	_new->result = -1; \
+	_new->nb = g_nb_tests++; \
+	_new->format = (char *)(_new + sizeof(test)); \
+	_new->format = strcpy(_new->format, _format); \
+	_new->printf_ret = (int)PRINTF(_format, ##__VA_ARGS__); \
+	_new->printf_out = gnl(g_fd); \
+	_new->ft_printf_ret = (int)FT_PRINTF(_format, ##__VA_ARGS__); \
+	_new->ft_printf_out = gnl(g_fd); \
+	test->next = _new; \
+	_new->prev = test; \
 })
 
 /* -----| Enum |----- */
