@@ -1,7 +1,23 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   test-printf.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: nduvoid <nduvoid@42mulhouse.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/01/31 09:33:28 by nduvoid           #+#    #+#             */
+/*   Updated: 2025/01/31 10:48:46 by nduvoid          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 /** Big Header */
 
 #include "test-printf.h"
 #include "../ft_printf.h"
+
+int	g_nb_tests = 0;
+int	g_saved_stdout = -1;
+int	g_fd = -1;
 
 __attribute__((noreturn)) void	exiting(const int code, const char *err, void *ptr)
 {
@@ -43,62 +59,23 @@ void	args_handler(int argc, char *argv[])
 		exit(1);
 	}
 }
-
-void	new_test(t_test *test, const char *format)
-{
-	test->format = strdup(format);	// @todo: make strdup()
-	test->printf_out = NULL;
-	test->printf_ret = 0;
-	test->ft_printf_ret = 0;
-	test->nb = test->prev->nb + 1;
-	test->next = (t_test *)malloc(sizeof(t_test));
-	if (!test->next)
-		exiting(malloc_failed, "new_test: cannot malloc test->next", test);
-	test->next->prev = test;
-	test = test->next;
-}
-
-void	free_test(t_test *test)
-{
-	t_test	*tmp = NULL;
-
-	while (test)
-	{
-		tmp = test;
-		test = test->next;
-		if (tmp->format)
-			free(tmp->format);
-		if (tmp->printf_out)
-			free(tmp->printf_out);
-		if (tmp->ft_printf_out)
-			free(tmp->ft_printf_out);
-		free(tmp);
-	}
-}
-
-void	do_test(t_test *test, int fd)
-{
-	test->printf_ret = printf(test->format);
-	test->printf_out = gnl(fd);
-	test->ft_printf_ret = ft_printf(test->format);
-	test->ft_printf_out = gnl(fd);
-	test->result = (test->printf_ret == test->ft_printf_ret
-		&& !strcmp(test->printf_out, test->ft_printf_out));
-}
+# define TEST(test, _format, ...) ({ \
+	t_test	*_new = (t_test *)malloc(sizeof(t_test) + sizeof(char) * (strlen(_format) + 1)); \
+	if (!_new) \
+		exiting(malloc_failed, "TEST: cannot malloc _new", NULL); \
+	_new->result = -1; \
+	_new->nb = g_nb_tests++; \
+	_new->format = (char *)(_new + sizeof(test)); \
+	_new->format = strcpy(_new->format, _format); \
+	_new->printf_ret = PRINTF(_format, ##__VA_ARGS__); \
+	_new->printf_out = gnl(g_fd); \
+	_new->ft_printf_ret = FT_PRINTF(_format, ##__VA_ARGS__); \
+	_new->ft_printf_out = gnl(g_fd); \
+	test->next = _new; \
+	})
 
 int	tester(void)
 {
-	t_tester	*tester = NULL;
-	t_test		*test = NULL;
-
-	tester = (t_tester *)malloc(sizeof(t_tester));
-	if (!tester)
-		exiting(malloc_failed, "tester: cannot malloc tester", NULL);
-	tester->nb_test = 0;
-	tester->test = (t_test *)malloc(sizeof(t_test));
-	if (!tester->test)
-		exiting(malloc_failed, "tester: cannot malloc tester->test", tester);
-	test = tester->test;
 	return (0);
 }
 
@@ -106,6 +83,24 @@ int	tester(void)
 int main(int argc, char *argv[])
 {
 	args_handler(argc, argv);
-	tester();
+
+	g_saved_stdout = dup(STDOUT_FILENO);
+	g_fd = open(".temp", O_CREAT | O_RDWR | O_TRUNC, 0644);
+	if (g_fd < 0)
+		exiting(dup2_failed, "main: cannot dup stdout", NULL);
+	t_test	*test = malloc(sizeof(t_test));
+	if (!test)
+		exiting(malloc_failed, "main: cannot malloc test", NULL);
+	test->next = NULL;
+	REDIRECT(g_fd);
+	TEST(test, "Hello, World!\n");
+	// RESTORE(g_fd);
+	dup2(g_saved_stdout, STDOUT_FILENO);
+	close(g_saved_stdout);
+
+	printf("Test %d: %s\n", test->nb, test->printf_out);
+	free(test->printf_out);
+	close(g_fd);
+	free(test);
 	return (0);
 }

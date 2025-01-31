@@ -36,10 +36,19 @@
 # define SUBPART(subpart)		printf("\n" YELLOW subpart RESET "\n");
 
 # define REDIRECT(fd)			dup2(fd, STDOUT_FILENO);
-# define RESTORE(fd)			dup2(fd, STDOUT_FILENO);
-# define PRINTF(format, ...)	(int r = printf(format, __VA_ARGS__); \
+# define RESTORE(fd)			dup2(g_saved_stdout, fd);
+
+# define PRINTF(format, ...) ({ \
+	int _chars_written = printf(format, ##__VA_ARGS__); \
 	fflush(stdout); \
-	r;)
+	_chars_written; \
+})
+
+# define FT_PRINTF(format, ...) ({ \
+	int _chars_written = ft_printf(format, ##__VA_ARGS__); \
+	fflush(stdout); \
+	_chars_written; \
+})
 
 /* -----| Enum |----- */
 
@@ -53,13 +62,14 @@ typedef enum e_error
 	invalid_memory,
 	invalid_file,
 	malloc_failed,
+	dup2_failed,
 }	t_error;
 
 /* -----| Struct |----- */
 
 typedef struct s_test
 {
-	int		result : 2;
+	int		result;
 	int		nb;
 	int		printf_ret;
 	int		ft_printf_ret;
